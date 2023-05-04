@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import pygame
 import pigpio
 import collections
@@ -65,6 +66,8 @@ class SoundHandler():
         self.pi.set_pull_up_down(self.button_pin, pigpio.PUD_UP)
         self.pi.callback(self.button_pin, pigpio.FALLING_EDGE, self.on_falling_edge)
         self.t_last = 0.0
+        self.music_counter = 0
+        self.finished = True
 
     def on_falling_edge(self, gpio, *_):
         now = time.time()
@@ -73,6 +76,7 @@ class SoundHandler():
         print('Button pressed')
         self.t_last = now
         self.play_ok()
+        self.finished = False
         self.play_next_song()
 
     def load_ok_sound(self):
@@ -88,7 +92,15 @@ class SoundHandler():
             self.music_files.append(filename)
 
     def play_next_song(self):
+        if self.finished:
+            pygame.mixer.music.stop()
+            return
         song = self.music_files[0]
+        self.music_counter += 1
+        if self.music_counter >= len(self.music_files):
+            self.music_counter = 0
+            self.finished = True
+            pygame.mixer.music.stop()
         print(f'Playing "{os.path.basename(song)}"')
         pygame.mixer.music.load(song)
         self.music_files.rotate()
