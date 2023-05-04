@@ -64,9 +64,10 @@ class SoundHandler():
         self.load_music()
         self.pi = pigpio.pi()
         self.pi.set_pull_up_down(self.button_pin, pigpio.PUD_UP)
-        self.pi.callback(self.button_pin, pigpio.FALLING_EDGE, self.on_falling_edge)
+        self.pi.callback(self.button_pin, pigpio.FALLING_EDGE,
+                         self.on_falling_edge)
         self.t_last = 0.0
-        self.music_counter = 0
+        self.i_music = 0
         self.finished = True
 
     def on_falling_edge(self, gpio, *_):
@@ -88,22 +89,22 @@ class SoundHandler():
     def load_music(self):
         path = SOUNDS_DIR
         self.music_files = collections.deque([])
-        for filename in glob.glob(os.path.join(path, '*.wav')):
-            self.music_files.append(filename)
+        filenames = glob.glob(os.path.join(path, '*.wav'))
+        self.music_files = sorted(filenames)
 
     def play_next_song(self):
+        if self.i_music >= len(self.music_files):
+            self.i_music = 0
+            self.finished = True
+            pygame.mixer.music.stop()
+            return
         if self.finished:
             pygame.mixer.music.stop()
             return
-        song = self.music_files[0]
-        self.music_counter += 1
-        if self.music_counter >= len(self.music_files):
-            self.music_counter = 0
-            self.finished = True
-            pygame.mixer.music.stop()
+        song = self.music_files[self.i_music]
+        self.i_music += 1
         print(f'Playing "{os.path.basename(song)}"')
         pygame.mixer.music.load(song)
-        self.music_files.rotate()
         pygame.mixer.music.play()
 
     def play_ok(self):
